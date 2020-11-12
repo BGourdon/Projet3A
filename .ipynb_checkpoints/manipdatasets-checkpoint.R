@@ -142,6 +142,7 @@ tracescenario <- function(scenario, level, culture, indicateur){
     y1 <- subset(fichier, Farm == level, select = c("Year", indicateur))
     plot(y1$Year, y1[,2], type="l", xlab = "annees", ylab = "indicateur")
 
+    legend("bottomright",legend="level",text.col="red")
   }
 }
 

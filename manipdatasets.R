@@ -29,15 +29,45 @@ complementarycrop <- subset(datacrop, Scenario == "Complementarity scenario")
 synergeticcrop <- subset(datacrop, Scenario == "Synergetic scenario")
 
 
-#fonction qui crée un dataset avec un scénario, une ferme, une culture et un indicateur
-fichier <- function(scenario, farm, culture, indicateur) {
-  subset1 <- subset(datacrop, Scenario == scenario)
-  subset2 <- subset(subset1, Farm == farm)
-  subset3 <- subset(subset2, Crop == culture)
-  subset4 <- subset(subset3, select = c("Scenario", "Year", "Farm", "Parcel", "Crop", indicateur))
+#fonction qui crée un dataset avec un scénario, le level d'étude choisi, une culture et un indicateur
+#pour le fichier output MAELIA crop
+#entrées possibles
+#WARNING : bien respecter l'orthographe et les majuscules, bien mettre les guillemets
+#scenario : "Baseline situation" ; "Coexistence scenario" ; "Complementarity scenario" ; "Synergetic scenario"
+#level : "arable" ; "livestock" ; "territory" ; "AF1" ; "AF2" ; ... ; "AF5" ; "LF1" ; "LF2"
+#culture : "BarleyS" ; "BarleyW" ; "Buckwheat" ; "FavaB" ; "Flax" ; "Fodder" ; "gMaize" ; "Gpea" ; "Hay" ; "Hemp" ; "Lucern" ; "Lupin" ; "Mix_CerG" ; "OSR" ; "sMaize" ; "Tritic" ; "WheatW"
+#indicateur : "Yield" ; "Area" ; "Revenue" ; "Variablecost" ; "Energy" ; "ProteinkgN" ; "PDIN" ; "ProteinN.ton" ; "Nitrogen" ; "Phosphorus" ; "Potassium" ; "Active ingredient"
+
+dataset <- function(scenario, level, culture, indicateur) {
+  if (level == "arable"){
+      subset1 <- subset(datacrop, Scenario == scenario)
+      subset2 <- subset(subset1, Farm == "AF1" | Farm == "AF2" | Farm == "AF3" | Farm == "AF4" | Farm =="AF5")
+      subset3 <- subset(subset2, Crop == culture)
+      subset4 <- subset(subset3, select = c("Scenario", "Year", "Farm", "Parcel", "Crop", indicateur))
+  }else if (level == "livestock"){
+      subset1 <- subset(datacrop, Scenario == scenario)
+      subset2 <- subset(subset1, Farm == "LF1" | Farm == "LF2")
+      subset3 <- subset(subset2, Crop == culture)
+      subset4 <- subset(subset3, select = c("Scenario", "Year", "Farm", "Parcel", "Crop", indicateur))
+  }else if (level == "territory"){
+      subset1 <- subset(datacrop, Scenario == scenario)
+      subset2 <- subset(subset1, Farm == "AF1" | Farm == "AF2" | Farm == "AF3" | Farm == "AF4" | Farm =="AF5" | Farm == "LF1" | Farm == "LF2")
+      subset3 <- subset(subset2, Crop == culture)
+      subset4 <- subset(subset3, select = c("Scenario", "Year", "Farm", "Parcel", "Crop", indicateur))
+  }else{
+      subset1 <- subset(datacrop, Scenario == scenario)
+      subset2 <- subset(subset1, Farm == level)
+      subset3 <- subset(subset2, Crop == culture)
+      subset4 <- subset(subset3, select = c("Scenario", "Year", "Farm", "Parcel", "Crop", indicateur))
+  }
   return(subset4)
 }
 
-#exemple avec le rendement pour le wheat pour la ferme AF1 pour la baseline situation
-choix <- fichier("Baseline situation", "AF1", "WheatW", "Yield")
-plot(choix$Year, choix$Yield, type = "l", xlab = "années", ylab = "Yield")
+#exemple avec l'étude du scénario Baseline, pour le groupement des fermes arable, la culture WheatW, et l'indicateur Yield
+
+exdataset <- dataset("Baseline situation", "arable", "WheatW", "Yield")
+summary(exdataset)
+summary(exdataset$Yield)
+
+
+#fonction qui trace l'indicateur en fonction du temps

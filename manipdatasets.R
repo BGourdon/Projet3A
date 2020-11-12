@@ -65,9 +65,88 @@ dataset <- function(scenario, level, culture, indicateur) {
 
 #exemple avec l'étude du scénario Baseline, pour le groupement des fermes arable, la culture WheatW, et l'indicateur Yield
 
-exdataset <- dataset("Baseline situation", "arable", "WheatW", "Yield")
-summary(exdataset)
-summary(exdataset$Yield)
+fichier <- dataset("Baseline situation", "arable", "WheatW", "Yield")
+summary(fichier)
+summary(fichier$Yield)
 
 
-#fonction qui trace l'indicateur en fonction du temps
+#fonctions qui tracent l'indicateur en fonction du temps
+
+#pour un scenario : une courbe par ferme
+tracescenario <- function(scenario, level, culture, indicateur){
+
+
+  fichier <- dataset(scenario, level, culture, indicateur)
+
+  if (level == "arable"){
+
+    y1 <- subset(fichier, Farm == "AF1", select = c("Year", indicateur))
+    y2 <- subset(fichier, Farm == "AF2", select = c("Year", indicateur))
+    y3 <- subset(fichier, Farm == "AF3", select = c("Year", indicateur))
+    y4 <- subset(fichier, Farm == "AF4", select = c("Year", indicateur))
+    y5 <- subset(fichier, Farm == "AF5", select = c("Year", indicateur))
+
+    plot(y1$Year, y1[,2], col="red", type="l", xlab = "annees", ylab = "indicateur")
+    par(new=T)
+    plot(y2$Year, y2[,2], col="blue", type="l", xlab = "", ylab = "", axes = F)
+    par(new=T)
+    plot(y3$Year, y3[,2], col="green", type="l", xlab = "", ylab = "", axes = F)
+    par(new=T)
+    plot(y4$Year, y4[,2], col="yellow", type="l", xlab = "", ylab = "", axes = F)
+    par(new=T)
+    plot(y5$Year, y5[,2], col="purple", type="l", xlab = "", ylab = "", axes = F)
+
+    legend("bottomright",legend=c("AF1","AF2", "AF3", "AF4", "AF5"),text.col=c("red","blue", "green", "yellow", "purple"))
+
+
+  }else if (level == "livestock"){
+
+    y1 <- subset(fichier, Farm == "LF1", select = c("Year", indicateur))
+    y2 <- subset(fichier, Farm == "LF2", select = c("Year", indicateur))
+
+    plot(y1$Year, y1[,2], col="red", type="l", xlab = "annees", ylab = "indicateur")
+    par(new=T)
+    plot(y2$Year, y2[,2], col="blue", type="l", xlab = "", ylab = "", axes = F)
+
+    legend("bottomright",legend=c("LF1","LF2"),text.col=c("red","blue"))
+
+  }else if (level == "territory"){
+
+
+    y1 <- subset(fichier, Farm == "AF1", select = c("Year", indicateur))
+    y2 <- subset(fichier, Farm == "AF2", select = c("Year", indicateur))
+    y3 <- subset(fichier, Farm == "AF3", select = c("Year", indicateur))
+    y4 <- subset(fichier, Farm == "AF4", select = c("Year", indicateur))
+    y5 <- subset(fichier, Farm == "AF5", select = c("Year", indicateur))
+    y6 <- subset(fichier, Farm == "LF1", select = c("Year", indicateur))
+    y7 <- subset(fichier, Farm == "LF2", select = c("Year", indicateur))
+
+    plot(y1$Year, y1[,2], col="red", type="l", xlab = "annees", ylab = "indicateur")
+    par(new=T)
+    plot(y2$Year, y2[,2], col="blue", type="l", xlab = "", ylab = "", axes = F)
+    par(new=T)
+    plot(y3$Year, y3[,2], col="green", type="l", xlab = "", ylab = "", axes = F)
+    par(new=T)
+    plot(y4$Year, y4[,2], col="yellow", type="l", xlab = "", ylab = "", axes = F)
+    par(new=T)
+    plot(y5$Year, y5[,2], col="purple", type="l", xlab = "", ylab = "", axes = F)
+    par(new=T)
+    plot(y6$Year, y6[,2], col="pink", type="l", xlab = "annees", ylab = indicateur)
+    par(new=T)
+    plot(y7$Year, y7[,2], col="grey", type="l", xlab = "", ylab = "", axes = F)
+
+    legend("bottomright",legend=c("AF1","AF2", "AF3", "AF4", "AF5", "LF1", "LF2"),text.col=c("red","blue", "green", "yellow", "purple", "pink", "grey"))
+
+  }else{
+
+    y1 <- subset(fichier, Farm == level, select = c("Year", indicateur))
+    plot(y1$Year, y1[,2], type="l", xlab = "annees", ylab = "indicateur")
+
+    legend("bottomright",legend="level",text.col="red")
+  }
+}
+
+x11()
+tracescenario("Baseline situation", "arable", "WheatW", "Yield")
+
+#pour une ferme : une courbe par scenario

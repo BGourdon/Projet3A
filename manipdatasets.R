@@ -12,8 +12,8 @@ datalivestock<-read.csv2("MAELIA_livestock_raw.csv", dec=".", sep=";", header=T)
 date <- c("2005","2006","2007","2008","2009","2010","2011","2012","2013","2014","2015","2016","2017")
 names(indicators) <- c("Scenario", "Level", "Indicator", date)
 names(economicinfo) <- c("Group", "Variable", date)
-names(datacrop) <- c("Scenario", "Year", "Farm", "Parcel", "Crop", "Yield", "Area", "Revenue", "Variablecost", "Energy", "ProteinkgN", "PDIN", "ProteinN.ton", "Nitrogen", "Phosphorus", "Potassium", "Active ingredient")
-names(datalivestock) <- c("Scenario", "Year", "Farm", "Milk revenue", "Feed cost")
+names(datacrop) <- c("Scenario", "Year", "Farm", "Parcel", "Crop", "Yield", "Area", "Revenue", "Variablecost", "Energy", "ProteinkgN", "PDIN", "ProteinN.ton", "Nitrogen", "Phosphorus", "Potassium", "Activeingredient")
+names(datalivestock) <- c("Scenario", "Year", "Farm", "Milkrevenue", "Feedcost")
 
 
 summary(indicators)
@@ -242,3 +242,22 @@ ggplot(YieldWheatW, aes(x=Year)) +
 
 ggplot(YieldWheatW, aes(x=Year)) +
   geom_boxplot(aes(x = Farm, y = Yield)) + facet_wrap( ~ Scenario)
+
+##Etude du fichier livestock
+#on recree toutes les fonctions
+
+#fonction qui cree un dataset avec un scenario et un indicateur
+
+
+ggplot(datalivestock) +
+  geom_line(aes(x = Year, y = Milkrevenue, color = Farm)) + facet_wrap( ~ Scenario)
+
+
+ggplot(datalivestock) +
+  geom_line(aes(x = Year, y = Feedcost, color = Farm)) + facet_wrap( ~ Scenario)
+
+ggplot(datalivestock) +
+  geom_boxplot(aes(x = Year, y = Milkrevenue, color = Farm)) + facet_wrap( ~ Scenario)
+
+ggplot(datalivestock) +
+  geom_boxplot(aes(x = Year, y = Feedcost, color = Farm)) + facet_wrap( ~ Scenario)

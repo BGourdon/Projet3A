@@ -244,10 +244,6 @@ ggplot(YieldWheatW, aes(x=Year)) +
   geom_boxplot(aes(x = Farm, y = Yield)) + facet_wrap( ~ Scenario)
 
 ##Etude du fichier livestock
-#on recree toutes les fonctions
-
-#fonction qui cree un dataset avec un scenario et un indicateur
-
 
 ggplot(datalivestock) +
   geom_line(aes(x = Year, y = Milkrevenue, color = Farm)) + facet_wrap( ~ Scenario)
@@ -261,3 +257,6 @@ ggplot(datalivestock) +
 
 ggplot(datalivestock) +
   geom_boxplot(aes(x = Year, y = Feedcost, color = Farm)) + facet_wrap( ~ Scenario)
+
+##Etude du fichier indicators
+

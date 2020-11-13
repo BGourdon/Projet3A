@@ -70,10 +70,9 @@ summary(fichier)
 summary(fichier$Yield)
 
 
-#fonctions qui tracent l'indicateur en fonction du temps
+#fonction qui trace l'indicateur en fonction du temps pour plusieurs fermes dans un scenario et pour une culture donnee
 
-#pour un scenario : une courbe par ferme
-tracescenario <- function(scenario, level, culture, indicateur){
+tracescenariocultureindicateur <- function(scenario, level, culture, indicateur){
 
 
   fichier <- dataset(scenario, level, culture, indicateur)
@@ -131,7 +130,7 @@ tracescenario <- function(scenario, level, culture, indicateur){
     par(new=T)
     plot(y5$Year, y5[,2], col="purple", type="l", xlab = "", ylab = "", axes = F)
     par(new=T)
-    plot(y6$Year, y6[,2], col="pink", type="l", xlab = "annees", ylab = indicateur)
+    plot(y6$Year, y6[,2], col="pink", type="l", xlab = "", ylab = "", axes = F)
     par(new=T)
     plot(y7$Year, y7[,2], col="grey", type="l", xlab = "", ylab = "", axes = F)
 
@@ -146,6 +145,67 @@ tracescenario <- function(scenario, level, culture, indicateur){
 }
 
 x11()
-tracescenario("Baseline situation", "arable", "WheatW", "Yield")
+tracescenariocultureindicateur("Baseline situation", "arable", "WheatW", "Yield")
 
-#pour une ferme : une courbe par scenario
+##utilisation du package ggplot2
+
+install.packages("ggplot2")
+library(ggplot2)
+install.packages("tidyverse")
+library(tidyverse)
+
+
+with(datacrop, qplot(Year, Yield))
+
+qplot(Year, Yield, data = datacrop) +
+  facet_wrap(~ Farm)
+
+ggplot(data = datacrop, aes(x=Year)) + geom_point(aes(y = Yield), color = "red") + geom_point(aes(y = Revenue), color = "blue")
+
+
+#fonction qui creee un dataset avec un scenario, une ferme et un indicateur
+fichierfarm <- function(scenario, farm, indicateur) {
+  subset1 <- subset(datacrop, Scenario == scenario)
+  subset2 <- subset(subset1, Farm == farm)
+  subset3 <- subset(subset2, select = c("Year", "Crop", indicateur))
+  return(subset3)
+}
+
+baselineAF1 <- fichierfarm("Baseline situation", "AF1", "Yield")
+
+qplot(Year, Yield, data = baselineAF1) +
+  facet_wrap(~ Crop)
+
+#fonction qui cree un dataset avec un scenario, une culture et un indicateur
+fichierculture <- function(scenario, crop, indicateur) {
+  subset1 <- subset(datacrop, Scenario == scenario)
+  subset2 <- subset(subset1, Crop == crop)
+  subset3 <- subset(subset2, select = c("Year", "Farm", indicateur))
+  return(subset3)
+}
+
+baselineWheatW <- fichierculture("Baseline situation", "WheatW", "Yield")
+
+qplot(Year, Yield, data = baselineWheatW) + facet_wrap( ~ Farm)
+
+ggplot(baselineAF1) + geom_boxplot(aes(x = Crop, y = Yield))
+
+ggplot(baselineWheatW) + geom_boxplot(aes(x = Farm, y = Yield))
+
+#fonction qui cree un dataset avec un scenario et un indicateur
+fichierindicateur <- function(scenario, indicateur) {
+  subset1 <- subset(datacrop, Scenario == scenario)
+  subset2 <- subset(subset1, select = c("Year", "Crop", "Farm", indicateur))
+  return(subset2)
+}
+
+baselineYield <- fichierindicateur("Baseline situation", "Yield")
+
+ggplot(baselineAF1) +
+  geom_line(aes(x = Year, y = Yield, color = Crop))
+
+ggplot(baselineWheatW) +
+  geom_line(aes(x = Year, y = Yield, color = Farm))
+
+ggplot(baselineYield) +
+  geom_line(aes(x = Year, y = Yield, color = Crop)) + facet_wrap( ~ Farm)

@@ -209,3 +209,20 @@ ggplot(baselineWheatW) +
 
 ggplot(baselineYield) +
   geom_line(aes(x = Year, y = Yield, color = Crop)) + facet_wrap( ~ Farm)
+
+
+
+#fonction qui cree un dataset avec une ferme et un indicateur
+fichierscenario <- function(farm, indicateur) {
+  subset1 <- subset(datacrop, Farm == farm)
+  subset2 <- subset(subset1, select = c("Scenario", "Year", "Crop", "Farm", indicateur))
+  return(subset2)
+}
+
+YieldAF1 <- fichierscenario("AF1", "Yield")
+
+ggplot(baselineYield) +
+  geom_line(aes(x = Year, y = Yield, color = Crop)) + facet_wrap( ~ Farm)
+
+ggplot(YieldAF1, aes(x=Year)) +
+  geom_line(aes(x = Year, y = Yield, color = Crop)) + facet_wrap( ~ Scenario)

@@ -144,8 +144,8 @@ tracescenariocultureindicateur <- function(scenario, level, culture, indicateur)
   }
 }
 
-x11()
-tracescenariocultureindicateur("Baseline situation", "arable", "WheatW", "Yield")
+#x11()
+#tracescenariocultureindicateur("Baseline situation", "arable", "WheatW", "Yield")
 
 ##utilisation du package ggplot2
 

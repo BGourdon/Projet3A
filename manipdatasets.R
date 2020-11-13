@@ -226,3 +226,19 @@ ggplot(baselineYield) +
 
 ggplot(YieldAF1, aes(x=Year)) +
   geom_line(aes(x = Year, y = Yield, color = Crop)) + facet_wrap( ~ Scenario)
+
+
+#fonction qui cree un dataset avec une culture et un indicateur
+fichierscenario2 <- function(crop, indicateur) {
+  subset1 <- subset(datacrop, Crop == crop)
+  subset2 <- subset(subset1, select = c("Scenario", "Year", "Crop", "Farm", indicateur))
+  return(subset2)
+}
+
+YieldWheatW <- fichierscenario2("WheatW", "Yield")
+
+ggplot(YieldWheatW, aes(x=Year)) +
+  geom_line(aes(x = Year, y = Yield, color = Farm)) + facet_wrap( ~ Scenario)
+
+ggplot(YieldWheatW, aes(x=Year)) +
+  geom_boxplot(aes(x = Farm, y = Yield)) + facet_wrap( ~ Scenario)

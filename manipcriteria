@@ -1,0 +1,38 @@
+# Title     : Manipulation_criteria
+# Objective : Adapter le script de calcul des CD aux data MAELIA
+# Created by: BGourdon
+# Created on: 25/11/2020
+
+# Creation des datasets
+
+datacrop<-read.csv2("MAELIA_crop_raw.csv", dec=".", sep=";", header=T)
+datalivestock<-read.csv2("MAELIA_livestock_raw.csv", dec=".", sep=";", header=T)
+names(datacrop) <- c("Scenario", "Year", "Farm", "Parcel", "Crop", "Yield", "Area", "Revenue", "Variablecost", "Energy", "ProteinkgN", "PDIN", "ProteinN.ton", "Nitrogen", "Phosphorus", "Potassium", "Activeingredient")
+names(datalivestock) <- c("Scenario", "Year", "Farm", "Milkrevenue", "Feedcost")
+
+indicators<-read.csv2("export_indicators.csv", dec=".", sep=";", header=T)
+economicinfo<-read.csv2("export_economic_info.csv", dec=".", sep=";", header=T)
+
+# Chargement des librairies
+
+library(tidyverse)
+library(reshape2)
+library(cowplot)
+library(magrittr)
+library(ggplot2)
+library(corrplot)
+library(slider)
+
+# On veut selectionner les PA suivant (disponibles) :
+# Energy Yield ; Protein Yield ; Variable costs ; Total revenue ; Workload
+# Present dans le fichier "indicators" :
+# Energy Yield ; Protein Yield ; Workload ; Economic efficiency & Gross Margin
+# Present dans le fichier "economic_info" :
+# Variable costs
+
+# Objectif : calcul de differents CD pour chaque PA, trace des correlations entre les CD pour selection pertinente
+
+# Etape 1 : transformation des fichiers en fichiers exploitables
+# cf fichier main.py
+
+

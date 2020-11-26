@@ -9,10 +9,11 @@ import pandas as pd
 
 indicators = pd.read_csv("Indicators.csv", encoding='latin1', delimiter=";")
 indicators_melt = indicators.melt(id_vars=["Scenario", "Level", "Indicator"], var_name="Year", value_name="Value")
-print(indicators_melt.head())
+indicators_melt2 = indicators_melt[["Scenario", "Level", "Year", "Indicator", "Value"]]
+print(indicators_melt2.head())
 
-indicators_melt.to_csv('C:/Users/Utilisateur/PycharmProjects/pythonProject/export_indicators.csv', sep=';', index=False,
-                       header=True)
+indicators_melt2.to_csv('C:/Users/Utilisateur/PycharmProjects/pythonProject/export_indicators.csv', sep=';',
+                        index=False, header=True)
 
 economic_info = pd.read_csv("economic_info.csv", encoding='latin1', delimiter=";")
 economic_info_melt = economic_info.melt(id_vars=["Group", "Variable"], var_name="Year", value_name="Value")

@@ -3,16 +3,6 @@
 # Created by: BGourdon
 # Created on: 25/11/2020
 
-# Creation des datasets
-
-datacrop<-read.csv2("MAELIA_crop_raw.csv", dec=".", sep=";", header=T)
-datalivestock<-read.csv2("MAELIA_livestock_raw.csv", dec=".", sep=";", header=T)
-names(datacrop) <- c("Scenario", "Year", "Farm", "Parcel", "Crop", "Yield", "Area", "Revenue", "Variablecost", "Energy", "ProteinkgN", "PDIN", "ProteinN.ton", "Nitrogen", "Phosphorus", "Potassium", "Activeingredient")
-names(datalivestock) <- c("Scenario", "Year", "Farm", "Milkrevenue", "Feedcost")
-
-indicators<-read.csv2("export_indicators.csv", dec=".", sep=";", header=T)
-economicinfo<-read.csv2("export_economic_info.csv", dec=".", sep=";", header=T)
-
 # Chargement des librairies
 
 library(tidyverse)
@@ -25,14 +15,203 @@ library(slider)
 
 # On veut selectionner les PA suivant (disponibles) :
 # Energy Yield ; Protein Yield ; Variable costs ; Total revenue ; Workload
-# Present dans le fichier "indicators" :
-# Energy Yield ; Protein Yield ; Workload ; Economic efficiency & Gross Margin
+# Present dans le fichier datacrop :
+# Energy Yield ; Protein Yield ; Variable costs ; Revenue
 # Present dans le fichier "economic_info" :
 # Variable costs
+# Present dans le fichier "Indicators" :
+# Energy Yield ; Protein Yield , Economic efficiency & Workload
 
 # Objectif : calcul de differents CD pour chaque PA, trace des correlations entre les CD pour selection pertinente
 
-# Etape 1 : transformation des fichiers en fichiers exploitables
+## Etape 1 : transformation des fichiers en fichiers exploitables ####
 # cf fichier main.py
 
+# Via le fichier MAELIA_crop
 
+datacrop<-read.csv2("MAELIA_crop_raw.csv", dec=".", sep=";", header=T)
+names(datacrop) <- c("Scenario", "Year", "Farm", "Parcel", "Crop", "Yield",
+                     "Area", "Revenue", "Variablecost", "EnergyYield",
+                     "ProteinkgN", "PDIN", "ProteinYield", "Nitrogen",
+                     "Phosphorus", "Potassium", "Activeingredient")
+
+performances <- c(8, 9, 10, 13) #PA : Revenue, Variablecost, EnergyYield, ProteinYield, par ferme/culture
+#fonctionnement par colonnes : on peut utiliser les fonctions crées avec des boucles sur les colonnes
+
+# Via le fichier Indicators
+
+indicators <- read.csv("export_indicators.csv", dec=".", sep=";", header=T)
+indicatorsPA <- subset(indicators, Indicator == "Economic efficiency" |
+                         Indicator == "Gross margin(€/ha)" | Indicator == "Energy yield (MjKgDM/ha)" |
+                         Indicator == "Protein yield (kg N/ha)" | Indicator == "Workload h/ha")
+
+#PA : Economic efficiency, Gross margin, Energy yield, Protein yield, Workload, déjà groupé
+#fonctionnement par lignes
+
+# Fonctions qui créent le fichier à utiliser
+
+# Pour le fichier Indicators ###
+
+indicatorsubset <- function(data, scenario, level, indicator){
+  if (level == "arable"){
+    subset1 <- subset(data, Scenario == scenario)
+    subset2 <- subset(subset1, Level == "AF1" | Level == "AF2" | Level == "AF3" | Level == "AF4" | Level =="AF5")
+    subset3 <- subset(subset2, Indicator == indicator)
+  }else if (level == "livestock"){
+    subset1 <- subset(data, Scenario == scenario)
+    subset2 <- subset(subset1, Level == "LF1" | Level == "LF2")
+    subset3 <- subset(subset2, Indicator == indicator)
+  }else if (level == "territory"){
+    subset1 <- subset(data, Scenario == scenario)
+    subset2 <- subset(subset1, Level == "AF1" | Level == "AF2" | Level == "AF3" | Level == "AF4" | Level =="AF5" | Level == "LF1" | Level == "LF2")
+    subset3 <- subset(subset2, Indicator == indicator)
+  }else{
+    subset1 <- subset(data, Scenario == scenario)
+    subset2 <- subset(subset1, Level == level)
+    subset3 <- subset(subset2, Indicator == indicator)
+  }
+  return(subset3)
+}
+
+# Pour le fichier Maelia_crop ###
+
+datacropsubset <- function(data, scenario, level, indicator){
+  if (level == "arable"){
+    subset1 <- subset(data, Scenario == scenario)
+    subset2 <- subset(subset1, Farm == "AF1" | Farm == "AF2" | Farm == "AF3" | Farm == "AF4" | Farm =="AF5")
+    subset3 <- subset(subset2, select = c("Scenario", "Year", "Farm", "Parcel", "Crop", indicator))
+  }else if (level == "livestock"){
+    subset1 <- subset(data, Scenario == scenario)
+    subset2 <- subset(subset1, Farm == "LF1" | Farm == "LF2")
+    subset3 <- subset(subset2, select = c("Scenario", "Year", "Farm", "Parcel", "Crop", indicator))
+  }else if (level == "territory"){
+    subset1 <- subset(data, Scenario == scenario)
+    subset2 <- subset(subset1, Farm == "AF1" | Farm == "AF2" | Farm == "AF3" | Farm == "AF4" | Farm =="AF5" | Farm == "LF1" | Farm == "LF2")
+    subset3 <- subset(subset2, select = c("Scenario", "Year", "Farm", "Parcel", "Crop", indicator))
+  }else{
+    subset1 <- subset(data, Scenario == scenario)
+    subset2 <- subset(subset1, Farm == level)
+    subset3 <- subset(subset2, select = c("Scenario", "Year", "Farm", "Parcel", "Crop", indicator))
+  }
+  return(subset3)
+}
+
+
+# Etape 2 : construction des fonctions ####
+
+variability <- function(df, performances){
+  for(i in performances){
+
+    name <- colnames(df)[i]
+    colnames(df)[i] <- "perf"
+
+    df <- df%>%
+      group_by(Farm)%>%
+      mutate(detrend = if(all(is.na(perf))) NA else  resid(lm(perf ~ Year, na.action = na.exclude)))%>% # de-trended yield (residuals of linear regression)
+      mutate(min = min(perf, na.rm = T), max = max(perf, na.rm = T), range = max - min)%>%  # yield range
+      mutate(min = ifelse(min == Inf, NA, min), max = ifelse(max == -Inf, NA, max), range = ifelse(max == Inf, NA, range))%>%
+      mutate(CV = sd(detrend, na.rm = T)/mean(perf, na.rm = T), VAR = var(detrend, na.rm = T))%>% # de-trended yield (residuals) cv and variance
+      mutate(RSD = abs(sd(perf, na.rm = T)/mean(perf, na.rm = T))*100)%>% # relative standard deviation
+      arrange(Farm,Year)%>%
+      mutate(MVS = mean(100/abs(perf- slide_dbl(perf, mean, .before = 1, .after = 1)), na.rm = T))
+
+    df <- df %>%
+      group_by(Year)%>%
+      mutate(EI = mean(detrend, na.rm = T)) # environmental index
+
+    df <- df %>%
+      group_by(Farm)%>%
+      mutate(slopeFW = if(all(is.na(perf))) NA else abs(lm(detrend ~ EI, na.action = na.exclude)$coefficients[[2]]-1)) # slope of finlay-wilkinson regression
+
+    colnames(df)[(ncol(df)-9):ncol(df)] <-c(paste0(name,".detrend"),paste0(name,".min"),
+                                            paste0(name,".max"),paste0(name,".range"),
+                                            paste0(name,".CV"),paste0(name,".VAR"), paste0(name, ".RSD"),
+                                            paste0(name, ".MSV"),paste0(name,".EI"), paste0(name, ".slopeFW"))
+
+    jpeg(paste0(name,".stability_cor.jpg"), width = 17, height = 17, units = "cm", res = 300)
+    corrplot(cor(df[c((ncol(df)-6): (ncol(df) - 2), ncol(df))], use = "pairwise.complete.obs"))
+    dev.off()
+
+    colnames(df)[i] <- name
+
+  }
+  return(df)
+}
+
+
+resistance <- function(df, performances){
+  for(i in performances){
+
+    #df <- data_stab
+    #i<- 10
+    #attach(df)
+    name <- colnames(df)[i]
+    colnames(df)[i] <- "perf"
+    colnames(df)[colnames(df) == paste0(name,".detrend")] <- "detrend"
+
+    perclow <- quantile(df$perf, .10, na.rm = T)
+    perchigh <- quantile(df$perf, .80, na.rm = T)
+
+    df <- df%>%
+      group_by(Farm)%>%
+      mutate(probalow = length(na.omit(perf[perf < perclow]))/length(na.omit(perf)))%>%# probability of low performance level Li et al 2019
+      mutate(probalow10 = dnorm((perclow - mean(perf, na.rm = T))/sd(perf, na.rm = T))*100)%>%# probability of low performance level Macholdt et al 2020
+      mutate(probahigh = length(na.omit(perf[perf > perchigh]))/length(na.omit(perf)))%>%# probability of high performance level
+      mutate(pi = if(all(is.na(perf)) | length(!is.na(perf)[!is.na(perf) == T]) == 1) NA else (fitted(loess(perf ~ Year, span = 0.85, na.action = na.exclude))))%>%
+      mutate(loessdetrend = if(all(is.na(perf) | identical(round(perf,3),round(pi,3)))) NA else ((perf-pi)/pi))%>% # de trending with loess regression (y - fitted)/fitted
+      mutate(probafail = 1/var(loessdetrend, na.rm = T))%>%# probability of failure/crash
+      #mutate(RESe = if(length(perf[Year == 2015]) != 0) 1/(perf[Year == 2015] - mean(c(perf[Year == 2012],perf[Year == 2013],perf[Year == 2014]), na.rm = T)) else NA)%>% # Resistance to drought (2015)
+      mutate(NED = length(na.omit(perf[perf < 0.75*slide_dbl(perf, mean, na.action = na.omit, .before = 2)])))%>% # number of economic disruption
+      #mutate(RECOV = recovery(perf))# time to recover (in years) of economic disruption
+
+    df <- df[,-ncol(df)-5]
+
+    jpeg(paste0(name,".resist_cor.jpg"), width = 17, height = 17, units = "cm", res = 300)
+    corrplot(cor(df[c((ncol(df)-7): (ncol(df)-5),(ncol(df)-3): ncol(df))], use = "pairwise.complete.obs"))
+    #print(cor.test(pull(df[(ncol(df)-5)]), pull(df[ncol(df)-3])))
+    dev.off()
+
+    colnames(df)[(ncol(df)-7): ncol(df)] <- c(paste0(name, ".probalow"), paste0(name, ".probalow10"),
+                                              paste0(name,".probahigh"),
+                                              paste0(name, ".loessdetrend"),
+                                              paste0(name, ".probafail"), paste0(name, ".RESe"),
+                                              paste0(name, ".NED"), paste0(name, ".RECOV"))
+    colnames(df)[i] <- name
+    colnames(df)[colnames(df) == "detrend"] <- paste0(name,".detrend")
+  }
+  return(df)
+}
+
+trend <- function(df, performances){
+  for(i in performances){
+    #df <- data_resist
+    #i<- 10
+    #i=10
+    #df <- data_stab[data_stab$agroecosyst == "28",]
+    #colnames(df)[i] <- "perf"
+    #attach(df)
+    name <- colnames(df)[i]
+
+    colnames(df)[i] <- "perf"
+
+    df <- df%>%
+      group_by(Farm)%>%
+      mutate(level = mean(perf, na.rm = T))%>%# mean level
+      #mutate(RD = mean(RICA$gm[RICA$years %in% yr] - perf[yr %in% RICA$years] ,na.rm = T))%>%# mean relative distance to regional GM
+      mutate(trend = if(all(is.na(perf))) NA else lm(perf ~ Year, na.action = na.exclude)$coefficients[[2]]) # slope of linear regression
+
+    jpeg(paste0(name,".trend_cor.jpg"), width = 17, height = 17, units = "cm", res = 300)
+    corrplot(cor(df[(ncol(df)-2): ncol(df)], use = "pairwise.complete.obs"))
+    dev.off()
+
+    colnames(df)[(ncol(df)-2): ncol(df)] <- c(paste0(name, ".level"), paste0(name, ".RD"), paste0(name, ".trend"))
+    colnames(df)[i] <- name
+
+    df <- df %>%
+      mutate_at(vars(seq_len(ncol(df))), ~ifelse(. == "NaN", NA, .))
+  }
+  return(df)
+}
+
+performances <- c(8, 9, 10, 13)
+vardatacrop <- variability(datacrop, performances)
